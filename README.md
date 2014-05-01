@@ -1,5 +1,7 @@
 # State Machine Job
 
+[![Gem Version](https://badge.fury.io/rb/state_machine_job.svg)](http://badge.fury.io/rb/state_machine_job)
+
 Enqueue resque jobs on state machine transitions and change state
 according to job result.
 
