@@ -48,10 +48,6 @@ Now you can wire up the job in a state machine using the
       job SomeJob do
         on_enter 'running'
 
-        payload do |record|
-          {:some_attribute => record.some_attribute}
-        end
-
         result :ok => 'done'
         result :error => 'failed'
       end
