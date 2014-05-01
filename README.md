@@ -12,6 +12,9 @@ Add this line to your application's Gemfile:
 
     gem 'state_machine_job'
 
+Requires the [resque-logger](https://github.com/salizzar/resque-logger) 
+gem to be present and configured.
+
 ## Usage
 
 Extend your resque job with the `StateMachineJob` mixin and provide a
@@ -94,4 +97,5 @@ You can tell the state machine to retry a job based on its result:
 
 When `perform_with_result` returns the result `:pending`, the state
 machine will remain in the `runnning` state and enqueue a delayed
-job. This functionality requires the `resque-scheduler` gem.
+job. This functionality requires the [`resque-scheduler`](https://github.com/resque/resque-scheduler) 
+gem.
