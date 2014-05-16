@@ -245,5 +245,20 @@ module StateMachineJob
         }.to raise_error(/not supported/)
       end
     end
+
+    it 'does not raise exception if on_enter is used after result without :retry_if_state option' do
+      expect {
+        Class.new do
+          state_machine :initial => :idle  do
+            extend StateMachineJob::Macro
+
+            job TestJob do
+              result :ok, :state => :done
+              on_enter :running
+            end
+          end
+        end
+      }.not_to raise_error
+    end
   end
 end

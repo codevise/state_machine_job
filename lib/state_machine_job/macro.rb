@@ -23,7 +23,11 @@ module StateMachineJob
           raise('Combining the :retry_after and :retry_on_state options is not supported at the moment.')
         end
 
-        on_enter_state = @on_enter_state || raise('The on_enter call must appear above any result using the :retry_if_state option.')
+        if options[:retry_if_state] && !@on_enter_state
+          raise('The on_enter call must appear above any result using the :retry_if_state option.')
+        end
+
+        on_enter_state = @on_enter_state
 
         if options[:state]
           @state_machine.event(job_result_event_name(job_result)) do
