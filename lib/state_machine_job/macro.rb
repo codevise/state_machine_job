@@ -19,9 +19,19 @@ module StateMachineJob
           return result(job_result.first.first, :state => job_result.first.last)
         end
 
+        if options[:retry_if_state] && options[:retry_after]
+          raise('Combining the :retry_after and :retry_on_state options is not supported at the moment.')
+        end
+
+        on_enter_state = @on_enter_state || raise('The on_enter call must appear above any result using the :retry_if_state option.')
+
         if options[:state]
           @state_machine.event(job_result_event_name(job_result)) do
-            transition any => options[:state]
+            if options[:retry_if_state]
+              transition options[:retry_if_state] => on_enter_state
+            end
+
+            transition all => options[:state]
           end
         elsif options[:retry_after]
           @state_machine.define_helper :instance, retry_job_method_name(job_result) do |machine, object|
@@ -32,6 +42,7 @@ module StateMachineJob
 
       def on_enter(state)
         job, state_machine, queue = @job, @state_machine, @queue
+        @on_enter_state = state
 
         @state_machine.after_transition @state_machine.any => state do |object|
           queue.enqueue(job, object.class.name, object.id, @payload.call(object))

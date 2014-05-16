@@ -83,7 +83,7 @@ method using the `payload` method:
 `perform_with_result` is now called with the given hash of options as
 the second parameter.
 
-### Retrying Jobs
+### Retrying Jobs after a Delay
 
 You can tell the state machine to retry a job based on its result:
 
@@ -99,3 +99,26 @@ When `perform_with_result` returns the result `:pending`, the state
 machine will remain in the `runnning` state and enqueue a delayed
 job. This functionality requires the [`resque-scheduler`](https://github.com/resque/resque-scheduler) 
 gem.
+
+### Retrying Jobs Based on State
+
+You can tell the state machine to retry a job if a transition to a
+certain state occures while a job is running:
+
+    event :run do
+      transition 'idle' => 'running'
+      transition 'running' => 'rerun_requested'
+    end
+
+    job SomeJob do
+      on_enter 'running'
+
+      result :ok, :state => 'done', :retry_if_state => 'rerun_requested'
+      result :error => 'failed'
+    end
+
+If the `run` event is invoked while the job is already running, you
+can transition to a state signaling that the job will need to run
+again once it has finished.  In example, passing the `:retry_if_state`
+option causes the state machine to transition back to the `running`
+state once the job finishes with result `:ok`.

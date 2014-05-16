@@ -144,5 +144,106 @@ module StateMachineJob
 
       expect(object.state).to eq('done')
     end
+
+    describe ':retry_if_state option' do
+      it 'returns to on_enter state if state matches option when job finishes' do
+        queue = double('queue')
+        object = Class.new do
+          def id
+            43
+          end
+
+          state_machine :initial => :idle  do
+            extend StateMachineJob::Macro
+
+            state :idle
+            state :running
+            state :done
+            state :failed
+
+            event :run do
+              transition :idle => :running
+              transition :running => :rerun_required
+            end
+
+            job TestJob, queue do
+              on_enter :running
+              result :ok, :state => :done, :retry_if_state => :rerun_required
+            end
+          end
+        end.new
+
+        expect(queue).to receive(:enqueue).with(TestJob, nil, 43, {})
+
+        object.state = :running
+        object.run
+        object.state_machine_job_test_job_ok
+
+        expect(object.state).to eq('running')
+      end
+
+      it 'returns to result state if state does not match option when job finishes' do
+        queue = double('queue')
+        object = Class.new do
+          def id
+            43
+          end
+
+          state_machine :initial => :idle  do
+            extend StateMachineJob::Macro
+
+            state :idle
+            state :running
+            state :done
+            state :failed
+
+            event :run do
+              transition :idle => :running
+              transition :running => :rerun_required
+            end
+
+            job TestJob, queue do
+              on_enter :running
+              result :ok, :state => :done, :retry_if_state => :rerun_required
+            end
+          end
+        end.new
+
+        object.state = :running
+        object.state_machine_job_test_job_ok
+
+        expect(object.state).to eq('done')
+      end
+
+      it 'raises descriptive error when on_enter is used after result' do
+        expect {
+          Class.new do
+            state_machine :initial => :idle  do
+              extend StateMachineJob::Macro
+
+              job TestJob do
+                result :ok, :state => :done, :retry_if_state => :rerun_required
+                on_enter :running
+              end
+            end
+          end
+        }.to raise_error(/on_enter call must appear above any result/)
+      end
+
+      it 'raises descriptive error when used in combination with :retry_after option' do
+        expect {
+          Class.new do
+            state_machine :initial => :idle  do
+              extend StateMachineJob::Macro
+
+              job TestJob do
+                on_enter :running
+                result :ok, :state => :done, :retry_if_state => :rerun_required, :retry_after => 100
+              end
+            end
+          end
+        }.to raise_error(/not supported/)
+      end
+    end
   end
 end
