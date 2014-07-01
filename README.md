@@ -83,7 +83,7 @@ method using the `payload` method:
 `perform_with_result` is now called with the given hash of options as
 the second parameter.
 
-### Changing to States With Conditions
+### Changing to States with Conditions
 
 One job result can lead to different states based on a conditional.
 When the job finishes with the given result, the state machine
@@ -99,7 +99,7 @@ transitions to the first state whose conditional evaluates to true.
       result :error => 'failed'
     end
 
-A conditional can either be a lambda which optionally accepting the
+A conditional can either be a lambda optionally accepting the
 record as parameter or a symbol specifying a method to call on the
 record.
 
