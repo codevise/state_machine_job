@@ -12,7 +12,7 @@ Add this line to your application's Gemfile:
 
     gem 'state_machine_job'
 
-Requires the [resque-logger](https://github.com/salizzar/resque-logger) 
+Requires the [resque-logger](https://github.com/salizzar/resque-logger)
 gem to be present and configured.
 
 ## Usage
@@ -83,6 +83,26 @@ method using the `payload` method:
 `perform_with_result` is now called with the given hash of options as
 the second parameter.
 
+### Changing to States With Conditions
+
+One job result can lead to different states based on a conditional.
+When the job finishes with the given result, the state machine
+transitions to the first state whose conditional evaluates to true.
+
+    job SomeJob do
+      on_enter 'running'
+
+      result :ok, :state => 'special', :if => lambda { |record| record.some_condition? }
+      result :ok, :state => 'other', :if => :other_condition?
+      result :ok, :state => 'done'
+
+      result :error => 'failed'
+    end
+
+A conditional can either be a lambda which optionally accepting the
+record as parameter or a symbol specifying a method to call on the
+record.
+
 ### Retrying Jobs after a Delay
 
 You can tell the state machine to retry a job based on its result:
@@ -97,7 +117,7 @@ You can tell the state machine to retry a job based on its result:
 
 When `perform_with_result` returns the result `:pending`, the state
 machine will remain in the `runnning` state and enqueue a delayed
-job. This functionality requires the [`resque-scheduler`](https://github.com/resque/resque-scheduler) 
+job. This functionality requires the [`resque-scheduler`](https://github.com/resque/resque-scheduler)
 gem.
 
 ### Retrying Jobs Based on State
@@ -122,3 +142,7 @@ can transition to a state signaling that the job will need to run
 again once it has finished.  In example, passing the `:retry_if_state`
 option causes the state machine to transition back to the `running`
 state once the job finishes with result `:ok`.
+
+## See also
+
+[CHANGELOG](https://github.com/codevise/state_machine_job/blob/master/CHANGELOG.md)

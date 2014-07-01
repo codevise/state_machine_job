@@ -145,6 +145,104 @@ module StateMachineJob
       expect(object.state).to eq('done')
     end
 
+    it 'result raises descriptive error when trying to use hash only signature with additional options' do
+      expect {
+        Class.new do
+          state_machine :initial => :idle  do
+            extend StateMachineJob::Macro
+
+            job TestJob do
+              on_enter :running
+              result :ok => :done, :if => true
+            end
+          end
+        end
+      }.to raise_error(/Use an explicit :state option/)
+    end
+
+    describe ':if option' do
+      it 'allows skipping matching results' do
+        queue = double('queue')
+        object = Class.new do
+          def id
+            43
+          end
+
+          state_machine :initial => :idle  do
+            extend StateMachineJob::Macro
+
+            state :idle
+            state :running
+            state :done
+            state :other
+
+            event :run do
+              transition :idle => :running
+            end
+
+            job TestJob, queue do
+              on_enter :running
+              result :ok, :state => :done, :if => lambda { false }
+              result :ok, :state => :other
+            end
+          end
+        end.new
+
+        object.state = :running
+        object.state_machine_job_test_job_ok
+
+        expect(object.state).to eq('other')
+      end
+
+      it 'uses matching results if condition is truthy' do
+        queue = double('queue')
+        object = Class.new do
+          def id
+            43
+          end
+
+          state_machine :initial => :idle  do
+            extend StateMachineJob::Macro
+
+            state :idle
+            state :running
+            state :done
+            state :other
+
+            event :run do
+              transition :idle => :running
+            end
+
+            job TestJob, queue do
+              on_enter :running
+              result :ok, :state => :done, :if => lambda { true }
+              result :ok, :state => :other
+            end
+          end
+        end.new
+
+        object.state = :running
+        object.state_machine_job_test_job_ok
+
+        expect(object.state).to eq('done')
+      end
+
+      it 'raises descriptive error when used in combination with :retry_after option' do
+        expect {
+          Class.new do
+            state_machine :initial => :idle  do
+              extend StateMachineJob::Macro
+
+              job TestJob do
+                on_enter :running
+                result :ok, :state => :done, :if => true, :retry_after => 100
+              end
+            end
+          end
+        }.to raise_error(/not supported/)
+      end
+    end
+
     describe ':retry_if_state option' do
       it 'returns to on_enter state if state matches option when job finishes' do
         queue = double('queue')
