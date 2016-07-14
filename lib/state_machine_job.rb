@@ -19,6 +19,7 @@ module StateMachineJob
           perform_with_result(record, payload)
         rescue Exception => e
           logger.error "#{self.name} - exception for #{model_name} #{id}: #{e.inspect}"
+          e.backtrace.each { |line| logger.info(line) }
           :error
         end
 
