@@ -21,6 +21,8 @@ describe StateMachineJob do
     extend StateMachineJob
   end
 
+  class SomeError < StandardError; end
+
   class Model
     state_machine :initial => :idle do
       extend StateMachineJob::Macro
@@ -29,6 +31,7 @@ describe StateMachineJob do
       state :first_running
       state :second_running
       state :done
+      state :failed
 
       event :run do
         transition :idle => :first_running
@@ -40,6 +43,7 @@ describe StateMachineJob do
           {:n => 1}
         end
         result :ok => :second_running
+        result :error => :failed
       end
 
       job TestJob2, TestQueue.instance do
@@ -48,6 +52,7 @@ describe StateMachineJob do
           {:n => 2}
         end
         result :ok => :done
+        result :error => :failed
       end
     end
   end
@@ -74,6 +79,33 @@ describe StateMachineJob do
     expect(model).to receive(:test_job1_ok!)
 
     model.run
+  end
+
+  it 'lets exception bubble raised by perform_with_result' do
+    model = Model.new
+
+    allow(model).to receive(:id).and_return(5)
+    allow(Model).to receive(:find_by_id).and_return(model)
+    allow(TestJob1).to receive(:perform_with_result).and_raise(SomeError)
+
+    expect {
+      model.run
+    }.to raise_error(SomeError)
+  end
+
+  it 'invokes error job result event on record if perform_with_result raises' do
+    model = Model.new
+
+    allow(model).to receive(:id).and_return(5)
+    allow(Model).to receive(:find_by_id).and_return(model)
+    allow(TestJob1).to receive(:perform_with_result).and_raise(SomeError)
+
+    expect(model).to receive(:test_job1_error!)
+
+    begin
+      model.run
+    rescue SomeError
+    end
   end
 
   it 'job is skipped if record cannot be found' do
