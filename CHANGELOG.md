@@ -1,5 +1,14 @@
 # CHANGELOG
 
+### Version 0.3.0
+
+* Do not silence exceptions. Ensure state machine can transition to
+  failed state by invoking error result event, but then re-raise
+  exception, so they show up in the Resque error list.
+
+  Jobs are still free to rescue exceptions themselves and return an
+  error result instead.
+
 ### Version 0.2.0
 
 * `:if` option for job `result` to change to different states based on

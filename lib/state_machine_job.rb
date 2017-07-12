@@ -14,17 +14,19 @@ module StateMachineJob
     record = model_name.constantize.find_by_id(id)
 
     if record
-      result =
-        begin
-          perform_with_result(record, payload)
-        rescue Exception => e
-          logger.error "#{self.name} - exception for #{model_name} #{id}: #{e.inspect}"
-          e.backtrace.each { |line| logger.info(line) }
-          :error
-        end
+      begin
+        result = perform_with_result(record, payload)
+      rescue Exception => e
+        result = :error
 
-      logger.info "#{self.name} - result #{result} for #{model_name} #{id}"
-      record.send(event_name(result))
+        logger.error "#{self.name} - exception for #{model_name} #{id}: #{e.inspect}"
+        e.backtrace.each { |line| logger.info(line) }
+
+        raise
+      ensure
+        logger.info "#{self.name} - result #{result} for #{model_name} #{id}"
+        record.send(event_name(result))
+      end
     else
       logger.info "#{self.name} - #{model_name} #{id} not found. Skipping job."
     end
