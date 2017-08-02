@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rake', '< 13'
   spec.add_development_dependency 'rspec', '~> 3.6'
   spec.add_development_dependency 'activesupport', '< 5'
+  spec.add_development_dependency 'semmy', '~> 1.0'
 
   spec.add_runtime_dependency 'resque', '~> 1.25'
   spec.add_runtime_dependency 'resque-logger', '~> 0.2.0'

@@ -1,22 +1,20 @@
 # CHANGELOG
 
-### Version 0.3.0
+### Unreleased Changes
 
-* Do not silence exceptions. Ensure state machine can transition to
+- Do not silence exceptions. Ensure state machine can transition to
   failed state by invoking error result event, but then re-raise
-  exception, so they show up in the Resque error list.
+  exception, so they show up in the Resque error list. Jobs are still
+  free to rescue exceptions themselves and return an error result
+  instead.
+  ([#5](https://github.com/codevise/state_machine_job/pull/5))
+- Add backtrace info to exception logging
+  ([#3](https://github.com/codevise/state_machine_job/pull/3))
+- Restrict activesupport to < 5 for now
+  ([#4](https://github.com/codevise/state_machine_job/pull/4))
+- Use sinatra 1 in development and tests for ruby 2.1 compatibility
+  ([#6](https://github.com/codevise/state_machine_job/pull/6))
 
-  Jobs are still free to rescue exceptions themselves and return an
-  error result instead.
-
-### Version 0.2.0
-
-* `:if` option for job `result` to change to different states based on
-  conditionals.
-* Raise an exception if the shorthand `result` signature is used with
-  further options which would be ignored.
-
-### Version 0.1.0
-
-* `:retry_if_state` option to rerun jobs on completion if the state
-  changed since the job was scheduled.
+See
+[0-2-stable branch](https://github.com/codevise/state_machine_job/blob/0-2-stable/CHANGELOG.md)
+for previous changes.
