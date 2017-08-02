@@ -1,6 +1,10 @@
 # CHANGELOG
 
-### Unreleased Changes
+### Version 1.0.0
+
+2017-08-02
+
+[Compare changes](http://github.com/codevise/state_machine_job/compare/0-x-stable...v1.0.0)
 
 - Do not silence exceptions. Ensure state machine can transition to
   failed state by invoking error result event, but then re-raise
@@ -16,5 +20,5 @@
   ([#6](https://github.com/codevise/state_machine_job/pull/6))
 
 See
-[0-2-stable branch](https://github.com/codevise/state_machine_job/blob/0-2-stable/CHANGELOG.md)
+[0-x-stable branch](https://github.com/codevise/state_machine_job/blob/0-x-stable/CHANGELOG.md)
 for previous changes.
