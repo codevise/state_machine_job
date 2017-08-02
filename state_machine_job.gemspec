@@ -11,6 +11,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{State Machine + Resque.}
   spec.summary       = %q{Resque jobs class for rails state machines.}
   spec.homepage      = "http://github.com/codevise/state_machine_job"
+  spec.licenses    = ['MIT']
 
   spec.files         = `git ls-files`.split($/)
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
