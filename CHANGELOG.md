@@ -1,24 +1,11 @@
 # CHANGELOG
 
-### Version 1.0.0
+### Unreleased Changes
 
-2017-08-02
+[Compare changes](http://github.com/codevise/state_machine_job/compare/1-0-stable...master)
 
-[Compare changes](http://github.com/codevise/state_machine_job/compare/0-x-stable...v1.0.0)
-
-- Do not silence exceptions. Ensure state machine can transition to
-  failed state by invoking error result event, but then re-raise
-  exception, so they show up in the Resque error list. Jobs are still
-  free to rescue exceptions themselves and return an error result
-  instead.
-  ([#5](https://github.com/codevise/state_machine_job/pull/5))
-- Add backtrace info to exception logging
-  ([#3](https://github.com/codevise/state_machine_job/pull/3))
-- Restrict activesupport to < 5 for now
-  ([#4](https://github.com/codevise/state_machine_job/pull/4))
-- Use sinatra 1 in development and tests for ruby 2.1 compatibility
-  ([#6](https://github.com/codevise/state_machine_job/pull/6))
+None so far.
 
 See
-[0-x-stable branch](https://github.com/codevise/state_machine_job/blob/0-x-stable/CHANGELOG.md)
+[1-0-stable branch](http://github.com/codevise/state_machine_job/blob/1-0-stable/CHANGELOG.md)
 for previous changes.
