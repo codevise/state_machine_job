@@ -1,118 +1,64 @@
 require 'spec_helper'
 
 describe StateMachineJob do
-  class TestQueue
-    def enqueue(job, *args)
-      job.perform(*args)
-    end
+  class TestJob < ActiveJob::Base
+    include StateMachineJob
 
-    def self.instance
-      @instance ||= TestQueue.new
-    end
+    def perform_with_result(record, payload); end
   end
 
-  class TestJob1
-    @queue = 'test_job_1'
-    extend StateMachineJob
-  end
+  class Model
+    def id
+      3
+    end
 
-  class TestJob2
-    @queue = 'test_job_2'
-    extend StateMachineJob
+    def test_job_ok!; end
+
+    def test_job_error!; end
   end
 
   class SomeError < StandardError; end
 
-  class Model
-    state_machine :initial => :idle do
-      extend StateMachineJob::Macro
+  it 'passes record and payload to perform_with_result method' do
+    record = Model.new
+    payload = {n: 1}
+    job = TestJob.new
 
-      state :idle
-      state :first_running
-      state :second_running
-      state :done
-      state :failed
+    expect(job).to receive(:perform_with_result)
+      .with(record, payload).and_return(:ok)
 
-      event :run do
-        transition :idle => :first_running
-      end
-
-      job TestJob1, TestQueue.instance do
-        on_enter :first_running
-        payload do |object|
-          {:n => 1}
-        end
-        result :ok => :second_running
-        result :error => :failed
-      end
-
-      job TestJob2, TestQueue.instance do
-        on_enter :second_running
-        payload do |object|
-          {:n => 2}
-        end
-        result :ok => :done
-        result :error => :failed
-      end
-    end
-  end
-
-  it 'calls find on model and passes record and payload to perform_with_result method' do
-    model = Model.new
-
-    allow(model).to receive(:id).and_return(5)
-    allow(Model).to receive(:find_by_id).and_return(model)
-    expect(TestJob1).to receive(:perform_with_result).with(model, {:n => 1}).and_return(:ok)
-    expect(TestJob2).to receive(:perform_with_result).with(model, {:n => 2}).and_return(:ok)
-
-    model.run
+    job.perform(record, payload)
   end
 
   it 'invokes job result event on record' do
-    model = Model.new
+    record = Model.new
+    job = TestJob.new
 
-    allow(model).to receive(:id).and_return(5)
-    allow(Model).to receive(:find_by_id).and_return(model)
-    allow(TestJob1).to receive(:perform_with_result).and_return(:ok)
-    allow(TestJob2).to receive(:perform_with_result).and_return(:ok)
+    allow(job).to receive(:perform_with_result).and_return(:ok)
+    expect(record).to receive(:test_job_ok!)
 
-    expect(model).to receive(:test_job1_ok!)
-
-    model.run
+    job.perform(record)
   end
 
   it 'lets exception bubble raised by perform_with_result' do
-    model = Model.new
+    record = Model.new
+    job = TestJob.new
 
-    allow(model).to receive(:id).and_return(5)
-    allow(Model).to receive(:find_by_id).and_return(model)
-    allow(TestJob1).to receive(:perform_with_result).and_raise(SomeError)
+    allow(job).to receive(:perform_with_result).and_raise(SomeError)
 
-    expect {
-      model.run
-    }.to raise_error(SomeError)
+    expect { job.perform(record) }.to raise_error(SomeError)
   end
 
   it 'invokes error job result event on record if perform_with_result raises' do
-    model = Model.new
+    record = Model.new
+    job = TestJob.new
 
-    allow(model).to receive(:id).and_return(5)
-    allow(Model).to receive(:find_by_id).and_return(model)
-    allow(TestJob1).to receive(:perform_with_result).and_raise(SomeError)
-
-    expect(model).to receive(:test_job1_error!)
+    allow(job).to receive(:perform_with_result).and_raise(SomeError)
+    expect(record).to receive(:test_job_error!)
 
     begin
-      model.run
-    rescue SomeError
+      job.perform(record)
+    rescue SomeError # rubocop:disable Lint/HandleExceptions
     end
-  end
-
-  it 'job is skipped if record cannot be found' do
-    allow(Model).to receive(:find_by_id).and_return(nil)
-
-    expect {
-      TestJob1.perform(Model.name, -1, {})
-    }.not_to raise_exception
   end
 end

@@ -1,100 +1,109 @@
 require 'spec_helper'
 
+require 'rspec/rails/matchers/active_job'
+require 'timecop'
+
 module StateMachineJob
   describe Macro do
-    class TestJob
+    class TestJob < ActiveJob::Base
+      include StateMachineJob
     end
 
-    it 'enques job with model name, record id and payload arguments when entering on_enter state' do
-      queue = double('queue')
-      model = Class.new do
-        attr_accessor :some_attribute
+    class BaseModel
+      include ActiveModel::Model
+      include GlobalID::Identification
 
-        def initialize(some_attribute)
-          self.some_attribute = some_attribute
-          super()
-        end
+      attr_accessor :id
 
-        def id
-          43
-        end
+      cattr_accessor :instances
 
-        state_machine :initial => :idle do
-          extend StateMachineJob::Macro
-
-          state :idle
-          state :running
-          state :done
-          state :failed
-
-          event :run do
-            transition :idle => :running
-          end
-
-          job TestJob, queue do
-            on_enter :running
-            payload do |record|
-              {:some_attribute => record.some_attribute}
-            end
-            result :ok => :done
-          end
-        end
-      end
-      record = model.new('value')
-
-      def model.name
-        'Model'
+      def initialize(*)
+        super
+        instances[id] = self
       end
 
-      expect(queue).to receive(:enqueue).with(TestJob, 'Model', 43, {:some_attribute => 'value'})
+      def self.find(id)
+        instances.fetch(id.to_i)
+      end
+    end
+
+    before do
+      BaseModel.instances = {}
+    end
+
+    class Model < BaseModel
+      attr_accessor :state, :some_attribute
+
+      state_machine initial: :idle do
+        extend StateMachineJob::Macro
+
+        state :idle
+        state :running
+        state :done
+        state :failed
+
+        event :run do
+          transition idle: :running
+        end
+
+        job TestJob do
+          on_enter :running
+          payload do |record|
+            {some_attribute: record.some_attribute}
+          end
+          result ok: :done
+        end
+      end
+    end
+
+    it 'enques job with record and payload arguments when entering on_enter state' do
+      record = Model.new(id: 5, some_attribute: 'value')
+
       record.run
+
+      expect(TestJob).to have_been_enqueued.with(record, some_attribute: 'value')
     end
 
-    it 'enques job after retry time with model name, record id and payload arguments when retry after result event is invoked' do
-      queue = double('queue')
-      model = Class.new do
-        attr_accessor :some_attribute
+    class ModelWithRetry < BaseModel
+      attr_accessor :state, :some_attribute
 
-        def initialize(some_attribute)
-          self.some_attribute = some_attribute
-          super()
+      state_machine initial: :idle do
+        extend StateMachineJob::Macro
+
+        state :idle
+        state :running
+        state :done
+        state :failed
+
+        event :run do
+          transition idle: :running
         end
 
-        def id
-          43
-        end
-
-        state_machine :initial => :idle do
-          extend StateMachineJob::Macro
-
-          state :idle
-          state :running
-          state :done
-          state :failed
-
-          job TestJob, queue do
-            on_enter :running
-            payload do |record|
-              {:some_attribute => record.some_attribute}
-            end
-            result :failed, :retry_after => 60
-            result :ok => :done
+        job TestJob do
+          on_enter :running
+          payload do |record|
+            {some_attribute: record.some_attribute}
           end
+          result ok: :done
+          result :failed, retry_after: 60
         end
       end
-      record = model.new('value')
+    end
 
-      def model.name
-        'Model'
+    it 'enques job after retry time with record and payload when result event is invoked' do
+      Timecop.freeze do
+        record = ModelWithRetry.new(id: 5, some_attribute: 'value')
+
+        record.state_machine_job_test_job_failed!
+
+        expect(TestJob).to have_been_enqueued
+          .at(60.seconds.from_now).with(record, some_attribute: 'value')
       end
-
-      expect(queue).to receive(:enqueue_in).with(60, TestJob, 'Model', 43, {:some_attribute => 'value'})
-      record.state_machine_job_test_job_failed!
     end
 
     it 'has event for job result which transitions to result state' do
       object = Class.new do
-        state_machine :initial => :idle  do
+        state_machine initial: :idle do
           extend StateMachineJob::Macro
 
           state :idle
@@ -103,12 +112,12 @@ module StateMachineJob
           state :failed
 
           event :run do
-            transition :idle => :running
+            transition idle: :running
           end
 
           job TestJob do
             on_enter :running
-            result :ok => :done
+            result ok: :done
           end
         end
       end.new
@@ -121,7 +130,7 @@ module StateMachineJob
 
     it 'result supports state option signature' do
       object = Class.new do
-        state_machine :initial => :idle  do
+        state_machine initial: :idle do
           extend StateMachineJob::Macro
 
           state :idle
@@ -129,12 +138,12 @@ module StateMachineJob
           state :done
 
           event :run do
-            transition :idle => :running
+            transition idle: :running
           end
 
           job TestJob do
             on_enter :running
-            result :ok, :state => :done
+            result :ok, state: :done
           end
         end
       end.new
@@ -148,12 +157,12 @@ module StateMachineJob
     it 'result raises descriptive error when trying to use hash only signature with additional options' do
       expect {
         Class.new do
-          state_machine :initial => :idle  do
+          state_machine initial: :idle do
             extend StateMachineJob::Macro
 
             job TestJob do
               on_enter :running
-              result :ok => :done, :if => true
+              result ok: :done, if: true
             end
           end
         end
@@ -162,13 +171,8 @@ module StateMachineJob
 
     describe ':if option' do
       it 'allows skipping matching results' do
-        queue = double('queue')
         object = Class.new do
-          def id
-            43
-          end
-
-          state_machine :initial => :idle  do
+          state_machine initial: :idle do
             extend StateMachineJob::Macro
 
             state :idle
@@ -177,13 +181,13 @@ module StateMachineJob
             state :other
 
             event :run do
-              transition :idle => :running
+              transition idle: :running
             end
 
-            job TestJob, queue do
+            job TestJob do
               on_enter :running
-              result :ok, :state => :done, :if => lambda { false }
-              result :ok, :state => :other
+              result :ok, state: :done, if: -> { false }
+              result :ok, state: :other
             end
           end
         end.new
@@ -195,13 +199,8 @@ module StateMachineJob
       end
 
       it 'uses matching results if condition is truthy' do
-        queue = double('queue')
         object = Class.new do
-          def id
-            43
-          end
-
-          state_machine :initial => :idle  do
+          state_machine initial: :idle do
             extend StateMachineJob::Macro
 
             state :idle
@@ -210,13 +209,13 @@ module StateMachineJob
             state :other
 
             event :run do
-              transition :idle => :running
+              transition idle: :running
             end
 
-            job TestJob, queue do
+            job TestJob do
               on_enter :running
-              result :ok, :state => :done, :if => lambda { true }
-              result :ok, :state => :other
+              result :ok, state: :done, if: -> { true }
+              result :ok, state: :other
             end
           end
         end.new
@@ -230,12 +229,12 @@ module StateMachineJob
       it 'raises descriptive error when used in combination with :retry_after option' do
         expect {
           Class.new do
-            state_machine :initial => :idle  do
+            state_machine initial: :idle do
               extend StateMachineJob::Macro
 
               job TestJob do
                 on_enter :running
-                result :ok, :state => :done, :if => true, :retry_after => 100
+                result :ok, state: :done, if: true, retry_after: 100
               end
             end
           end
@@ -244,34 +243,31 @@ module StateMachineJob
     end
 
     describe ':retry_if_state option' do
+      class ModelWithRetryIfState < BaseModel
+        attr_accessor :state, :some_attribute
+
+        state_machine initial: :idle do
+          extend StateMachineJob::Macro
+
+          state :idle
+          state :running
+          state :done
+          state :failed
+
+          event :run do
+            transition idle: :running
+            transition running: :rerun_required
+          end
+
+          job TestJob do
+            on_enter :running
+            result :ok, state: :done, retry_if_state: :rerun_required
+          end
+        end
+      end
+
       it 'returns to on_enter state if state matches option when job finishes' do
-        queue = double('queue')
-        object = Class.new do
-          def id
-            43
-          end
-
-          state_machine :initial => :idle  do
-            extend StateMachineJob::Macro
-
-            state :idle
-            state :running
-            state :done
-            state :failed
-
-            event :run do
-              transition :idle => :running
-              transition :running => :rerun_required
-            end
-
-            job TestJob, queue do
-              on_enter :running
-              result :ok, :state => :done, :retry_if_state => :rerun_required
-            end
-          end
-        end.new
-
-        expect(queue).to receive(:enqueue).with(TestJob, nil, 43, {})
+        object = ModelWithRetryIfState.new(id: 43)
 
         object.state = :running
         object.run
@@ -281,31 +277,7 @@ module StateMachineJob
       end
 
       it 'returns to result state if state does not match option when job finishes' do
-        queue = double('queue')
-        object = Class.new do
-          def id
-            43
-          end
-
-          state_machine :initial => :idle  do
-            extend StateMachineJob::Macro
-
-            state :idle
-            state :running
-            state :done
-            state :failed
-
-            event :run do
-              transition :idle => :running
-              transition :running => :rerun_required
-            end
-
-            job TestJob, queue do
-              on_enter :running
-              result :ok, :state => :done, :retry_if_state => :rerun_required
-            end
-          end
-        end.new
+        object = ModelWithRetryIfState.new(id: 43)
 
         object.state = :running
         object.state_machine_job_test_job_ok
@@ -316,11 +288,11 @@ module StateMachineJob
       it 'raises descriptive error when on_enter is used after result' do
         expect {
           Class.new do
-            state_machine :initial => :idle  do
+            state_machine initial: :idle do
               extend StateMachineJob::Macro
 
               job TestJob do
-                result :ok, :state => :done, :retry_if_state => :rerun_required
+                result :ok, state: :done, retry_if_state: :rerun_required
                 on_enter :running
               end
             end
@@ -331,12 +303,12 @@ module StateMachineJob
       it 'raises descriptive error when used in combination with :retry_after option' do
         expect {
           Class.new do
-            state_machine :initial => :idle  do
+            state_machine initial: :idle do
               extend StateMachineJob::Macro
 
               job TestJob do
                 on_enter :running
-                result :ok, :state => :done, :retry_if_state => :rerun_required, :retry_after => 100
+                result :ok, state: :done, retry_if_state: :rerun_required, retry_after: 100
               end
             end
           end
@@ -347,11 +319,11 @@ module StateMachineJob
     it 'does not raise exception if on_enter is used after result without :retry_if_state option' do
       expect {
         Class.new do
-          state_machine :initial => :idle  do
+          state_machine initial: :idle do
             extend StateMachineJob::Macro
 
             job TestJob do
-              result :ok, :state => :done
+              result :ok, state: :done
               on_enter :running
             end
           end
