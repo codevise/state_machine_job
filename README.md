@@ -12,16 +12,12 @@ Add this line to your application's Gemfile:
 
     gem 'state_machine_job'
 
-Requires the [resque-logger](https://github.com/salizzar/resque-logger)
-gem to be present and configured.
-
 ## Usage
 
-Extend your resque job with the `StateMachineJob` mixin and provide a
-`perform_with_result` class method instead of the normal `perform`
-method:
+Include the `StateMachineJob` mixin in your job and provide a
+`perform_with_result` method instead of the normal `perform` method:
 
-    class SomeJob
+    class SomeJob < ApplicationJob
       include StateMachineJob
 
       def perform_with_result(record, payload)
@@ -61,8 +57,8 @@ event or by manually updateing the attribute), `SomeJob` will
 automatically be enqueued. If `perform_with_result` returns `:ok`, the
 state machine transitions to the `'done'` state. You can specify as
 many results as you want. Note that any exception raised by
-`perform_with_result` is rescued and translated to the result
-`:error`.
+`perform_with_result` leads to a state machine transition as if the
+result had been `:error`. The exception is not rescued, though.
 
 ### Passing custom Payload
 
@@ -117,8 +113,7 @@ You can tell the state machine to retry a job based on its result:
 
 When `perform_with_result` returns the result `:pending`, the state
 machine will remain in the `runnning` state and enqueue a delayed
-job. This functionality requires the [`resque-scheduler`](https://github.com/resque/resque-scheduler)
-gem.
+job. This feature uses the Active Job `set(wait: n)` functionality.
 
 ### Retrying Jobs Based on State
 

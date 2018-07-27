@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = StateMachineJob::VERSION
   spec.authors       = ["Codevise Solutions Ltd."]
   spec.email         = ["info@codevise.de"]
-  spec.description   = %q{State Machine + Resque.}
-  spec.summary       = %q{Resque jobs class for rails state machines.}
+  spec.description   = %q{State Machine + Active Job}
+  spec.summary       = %q{Trigger jobs via Rails state machines.}
   spec.homepage      = "http://github.com/codevise/state_machine_job"
   spec.licenses    = ['MIT']
 
