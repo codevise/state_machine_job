@@ -1,8 +1,10 @@
 # CHANGELOG
 
-### Unreleased Changes
+### Version 2.0.0
 
-[Compare changes](http://github.com/codevise/state_machine_job/compare/1-x-stable...master)
+2018-07-27
+
+[Compare changes](http://github.com/codevise/state_machine_job/compare/1-x-stable...v2.0.0)
 
 - Breaking change: Decouple from Resque and use Active Job. See README
   for updated usage instructions.
