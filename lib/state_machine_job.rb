@@ -1,40 +1,27 @@
 require 'state_machine_job/version'
 require 'state_machine_job/macro'
 
-require 'resque'
-require 'resque/plugins/logger'
-require 'resque_logger'
-
 module StateMachineJob
-  include Resque::Plugins::Logger
+  def perform(record, payload = {})
+    record_name = "#{record.class.name} #{record.id}"
+    logger.info "perform for #{record_name}"
 
-  def perform(model_name, id, payload = {})
-    logger.info "#{self.name} - perform for #{model_name} #{id}"
-
-    record = model_name.constantize.find_by_id(id)
-
-    if record
-      begin
-        result = perform_with_result(record, payload)
-      rescue Exception => e
-        result = :error
-
-        logger.error "#{self.name} - exception for #{model_name} #{id}: #{e.inspect}"
-        e.backtrace.each { |line| logger.info(line) }
-
-        raise
-      ensure
-        logger.info "#{self.name} - result #{result} for #{model_name} #{id}"
-        record.send(event_name(result))
-      end
-    else
-      logger.info "#{self.name} - #{model_name} #{id} not found. Skipping job."
+    begin
+      result = perform_with_result(record, payload)
+    rescue StandardError
+      result = :error
+      raise
+    ensure
+      logger.info "result #{result} for #{record_name}"
+      record.send(StateMachineJob.result_method_name(self.class, result))
     end
   end
 
-  private
+  def self.result_event_name(job, result)
+    [job.name.underscore.split('/'), result].flatten.join('_').to_sym
+  end
 
-  def event_name(result)
-    ([self.name.underscore.split('/'), result].flatten.join('_') + '!').to_sym
+  def self.result_method_name(job, result)
+    "#{result_event_name(job, result)}!"
   end
 end

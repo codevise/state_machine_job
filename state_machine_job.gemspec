@@ -20,11 +20,12 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency 'bundler', '~> 1.3'
   spec.add_development_dependency 'rake', '< 13'
-  spec.add_development_dependency 'rspec', '~> 3.6'
-  spec.add_development_dependency 'activesupport', '< 5'
+  spec.add_development_dependency 'rspec-rails', '~> 3.7'
+  spec.add_development_dependency 'activesupport', '< 6'
+  spec.add_development_dependency 'activemodel', '< 6'
   spec.add_development_dependency 'semmy', '~> 1.0'
+  spec.add_development_dependency 'timecop', '~> 0.9.1'
 
-  spec.add_runtime_dependency 'resque', '~> 1.25'
-  spec.add_runtime_dependency 'resque-logger', '~> 0.2.0'
+  spec.add_runtime_dependency 'activejob', ['>= 4.2', '< 6']
   spec.add_runtime_dependency 'state_machine', '~> 1.2'
 end

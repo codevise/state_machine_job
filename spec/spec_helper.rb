@@ -1,10 +1,16 @@
-require 'rspec'
+require 'action_controller/railtie'
+require 'rspec/rails'
 
 PROJECT_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..')).freeze
 $LOAD_PATH << File.join(PROJECT_ROOT, 'lib')
 
 require 'active_support/inflector'
+require 'active_model'
+require 'active_job'
 require 'state_machine'
 require 'state_machine_job'
 
-Dir[File.join(PROJECT_ROOT, 'spec', 'support', '**', '*.rb')].each { |file| require(file) }
+ActiveJob::Base.logger = Logger.new(nil)
+ActiveJob::Base.queue_adapter = :test
+
+GlobalID.app = :test

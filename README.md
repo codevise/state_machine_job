@@ -3,8 +3,8 @@
 [![Gem Version](https://badge.fury.io/rb/state_machine_job.svg)](http://badge.fury.io/rb/state_machine_job)
 [![Build Status](https://travis-ci.org/codevise/state_machine_job.svg?branch=master)](https://travis-ci.org/codevise/state_machine_job)
 
-Enqueue resque jobs on state machine transitions and change state
-according to job result.
+Enqueue jobs on state machine transitions and change state according
+to job result.
 
 ## Installation
 
@@ -22,9 +22,9 @@ Extend your resque job with the `StateMachineJob` mixin and provide a
 method:
 
     class SomeJob
-      extend StateMachineJob
+      include StateMachineJob
 
-      def self.perform_with_result(record, payload)
+      def perform_with_result(record, payload)
         # do something
         :ok
       end
