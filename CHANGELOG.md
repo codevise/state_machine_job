@@ -1,14 +1,11 @@
 # CHANGELOG
 
-### Version 3.0.0
+### Unreleased Changes
 
-2018-07-31
+[Compare changes](http://github.com/codevise/state_machine_job/compare/3-0-stable...master)
 
-[Compare changes](http://github.com/codevise/state_machine_job/compare/2-x-stable...v3.0.0)
-
-- Migrate to `state_machines` gem
-  ([#10](https://github.com/codevise/state_machine_job/pull/10))
+None so far.
 
 See
-[2-x-stable branch](http://github.com/codevise/state_machine_job/blob/2-x-stable/CHANGELOG.md)
+[3-0-stable branch](http://github.com/codevise/state_machine_job/blob/3-0-stable/CHANGELOG.md)
 for previous changes.
