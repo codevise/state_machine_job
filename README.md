@@ -56,9 +56,15 @@ When the `state` attribute changes to `'running'` (either by the `run`
 event or by manually updateing the attribute), `SomeJob` will
 automatically be enqueued. If `perform_with_result` returns `:ok`, the
 state machine transitions to the `'done'` state. You can specify as
-many results as you want. Note that any exception raised by
-`perform_with_result` leads to a state machine transition as if the
-result had been `:error`. The exception is not rescued, though.
+many results as you want.
+
+Note that any exception raised by `perform_with_result` leads to a
+state machine transition as if the result had been `:error`. The
+exception is not rescued, though. If `perform_with_result` raises an
+exception and the record is invalid, previous attribute values will be
+restored before invoking the transition. That way the transition to
+the error state can be persisted by rolling back the changes that led
+to the records invalidity during job execution.
 
 ### Passing custom Payload
 

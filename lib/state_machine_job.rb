@@ -9,6 +9,7 @@ module StateMachineJob
     begin
       result = perform_with_result(record, payload)
     rescue StandardError
+      record.restore_attributes unless record.valid?
       result = :error
       raise
     ensure
