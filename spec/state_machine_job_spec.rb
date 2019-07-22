@@ -8,6 +8,9 @@ describe StateMachineJob do
   end
 
   class Model
+    include ActiveModel::Dirty
+    include ActiveModel::Validations
+
     def id
       3
     end
@@ -15,6 +18,23 @@ describe StateMachineJob do
     def test_job_ok!; end
 
     def test_job_error!; end
+  end
+
+  class ModelRequiringName < Model
+    attr_reader :name
+
+    validates_presence_of :name
+    define_attribute_methods :name
+
+    def initialize(name: nil)
+      @name = name
+      changes_applied
+    end
+
+    def name=(value)
+      name_will_change! unless value == @name
+      @name = value
+    end
   end
 
   class SomeError < StandardError; end
@@ -59,6 +79,22 @@ describe StateMachineJob do
     begin
       job.perform(record)
     rescue SomeError # rubocop:disable Lint/HandleExceptions
+    end
+  end
+
+  it 'restores attributes of invalid record before invoking job result event ' \
+     'if perform_with_result raises to ensure state transition can be persisted' do
+    record = ModelRequiringName.new(name: 'Susan')
+    job = TestJob.new
+
+    record.name = ''
+    allow(job).to receive(:perform_with_result).and_raise(SomeError)
+
+    begin
+      job.perform(record)
+    rescue SomeError # rubocop:disable Lint/HandleExceptions
+    ensure
+      expect(record).to be_valid
     end
   end
 end
