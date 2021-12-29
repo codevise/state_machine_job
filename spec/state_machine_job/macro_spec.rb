@@ -25,6 +25,10 @@ module StateMachineJob
       def self.find(id)
         instances.fetch(id.to_i)
       end
+
+      def self.primary_key
+        :id
+      end
     end
 
     before do
