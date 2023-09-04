@@ -1,7 +1,7 @@
 # State Machine Job
 
 [![Gem Version](https://badge.fury.io/rb/state_machine_job.svg)](http://badge.fury.io/rb/state_machine_job)
-[![Build Status](https://travis-ci.org/codevise/state_machine_job.svg?branch=master)](https://travis-ci.org/codevise/state_machine_job)
+[![Build Status](https://github.com/codevise/state_machine_job/actions/workflows/tests.yml/badge.svg)](https://github.com/codevise/state_machine_job/actions)
 
 Enqueue jobs on state machine transitions and change state according
 to job result.
