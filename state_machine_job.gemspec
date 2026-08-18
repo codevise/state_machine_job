@@ -25,6 +25,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'semmy', '~> 1.0'
   spec.add_development_dependency 'timecop', '~> 0.9.1'
 
-  spec.add_runtime_dependency 'activejob', ['>= 4.2', '< 8']
+  spec.add_runtime_dependency 'activejob', ['>= 4.2', '< 9']
   spec.add_runtime_dependency 'state_machines', ['>= 0.5', '< 0.7']
 end
