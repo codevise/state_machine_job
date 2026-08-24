@@ -1,3 +1,3 @@
 module StateMachineJob
-  VERSION = '3.3.0.dev'.freeze
+  VERSION = '3.3.0'.freeze
 end
